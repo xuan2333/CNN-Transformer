@@ -12,7 +12,7 @@ python 3.8.2
 
 Pytorch
 
-# Datasets
+# Datasets.zip
 "Phyllostachys_edulis_V1.pep" is all the moso bamboo protein data downloaded on the Bamboo GDB official website.
 "train.csv" is the training set
 "valid.csv" is the validation set
