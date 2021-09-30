@@ -315,27 +315,7 @@ weight=torch.from_numpy(np.array([0.53, 10.5])).float()
 model = Net()
 loss_fn = nn.CrossEntropyLoss(weight=weight)
 optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
-train_loss = []
-train_acc = []
-test_loss = []
-test_acc = []
-tra_ba=[]
-test_ba=[]
-tra_gm = []
-tra_bm = []
-test_gm = []
-test_bm = []
-tra_mcc=[]
-test_mcc=[]
-tra_auc=[]
-te_auc=[]
-train_loss = []
-train_acc = []
-test_loss = []
-test_acc = []
-#model=model.to('cuda')
-
-
+model=model.to('cuda')
 def acu_curve(y, prob):
     # y真实prob预测
     fpr, tpr, threshold = roc_curve(y, prob)  ###计算真阳性率和假阳性率
@@ -356,7 +336,7 @@ def acu_curve(y, prob):
 
     plt.show()
 
-def fit(epoch, model, trainloader, testloader):
+def fit(epoch, model, trainloader, validloader):
     correct = 0
     total = 0
     running_loss = 0
@@ -367,7 +347,7 @@ def fit(epoch, model, trainloader, testloader):
 
     model.train()
     for x, y in trainloader:
-        #x, y = x.to('cuda'), y.to('cuda')
+        x, y = x.to('cuda'), y.to('cuda')
         y_pred = model(x)
         # print('trian_y:',y)
         loss = loss_fn(y_pred, y)
@@ -387,7 +367,7 @@ def fit(epoch, model, trainloader, testloader):
             # print(tp,fn,fp,tn)
             total += y.size(0)
             running_loss += loss.item()
-    #    exp_lr_scheduler.step()
+    exp_lr_scheduler.step()
     print(tp, fn, fp, tn)
     ba=((tp/(tp+fn))+(tn/(fp+tn)))/2
     mcc = (tp * tn - tp * fn) / (math.sqrt((tp + fp) * (tp + fn) * (tn + fp) * (tn + fn)))
@@ -402,126 +382,39 @@ def fit(epoch, model, trainloader, testloader):
     vl_fn = 0
     vl_fp = 0
     vl_tn = 0
+    
+    valid_correct = 0
+    valid_total = 0
+    valid_running_loss = 0
     for x, y in valid_dl:
-        #x, y = x.to('cuda'), y.to('cuda')
+        x, y = x.to('cuda'), y.to('cuda')
         y_pred = model(x)
-        # print('trian_y:',y)
-
+        print('trian_y:',y)
+        loss = loss_fn(y_pred, y)
         y_pred = torch.argmax(y_pred, dim=1)
-        # print('train_y_pre',y_pred)
-        correct += (y_pred == y).sum().item()
-        # print(y_pred,y)
+        print('train_y_pre',y_pred)
+        valid_correct += (y_pred == y).sum().item()
         vl_tp += ((y_pred == y) & (y == 1)).sum().item()
         vl_fn += ((y_pred != y) & (y == 1)).sum().item()
         vl_fp += ((y_pred != y) & (y == 0)).sum().item()
         vl_tn += ((y_pred == y) & (y == 0)).sum().item()
-        # print(tp,fn,fp,tn)
-        total += y.size(0)
-        running_loss += loss.item()
+        valid_total += y.size(0)
+        valid_running_loss += loss.item()
 
     vl_ba=((vl_tp/(vl_tp+vl_fn))+(vl_tn/(vl_fp+vl_tn)))/2
     vl_mcc = (vl_tp * vl_tn - vl_tp * vl_fn) / (math.sqrt((vl_tp + vl_fp) * (vl_tp + vl_fn) * (vl_tn + vl_fp) * (vl_tn + vl_fn)))
     vl_gm = math.sqrt((tp / (tp + fn)) * (tn / (tn + fp)))
     vl_bm = vl_tp / (vl_tp + vl_fn) + vl_tn / (vl_tn + vl_fp) - 1
     print(vl_ba,vl_bm,vl_gm,vl_mcc)
-    #-------------------------
-
-
-
-
-    test_correct = 0
-    test_total = 0
-    test_running_loss = 0
-    te_tp = 0
-    te_fn = 0
-    te_fp = 0
-    te_tn = 0
-
-
-
-    model.eval()
-    with torch.no_grad():
-        for x, y in testloader:
-
-            #x, y = x.to('cuda'), y.to('cuda')
-            y_pred = model(x)
-            # print('test_y:',y)
-            loss = loss_fn(y_pred, y)
-            y_pred = torch.argmax(y_pred, dim=1)
-            # print('test_y_pre',y_pred)
-            test_correct += (y_pred == y).sum().item()
-            te_tp += ((y_pred == y) & (y == 1)).sum().item()
-            te_fn += ((y_pred != y) & (y == 1)).sum().item()
-            te_fp += ((y_pred != y) & (y == 0)).sum().item()
-            te_tn += ((y_pred == y) & (y == 0)).sum().item()
-            test_total += y.size(0)
-            test_running_loss += loss.item()
-    print(te_tp, te_fn, te_fp, te_tn)
-    te_ba = ((te_tp / (te_tp + te_fn)) + (te_tn / (te_fp + te_tn))) / 2
-    te_mcc = (te_tp * te_tn - te_tp * te_fn) / math.sqrt(
-        (te_tp + te_fp) * (te_tp + te_fn) * (te_tn + te_fp) * (te_tn + te_fn))
-    epoch_test_loss = test_running_loss / len(testloader.dataset)
-    epoch_test_acc = test_correct / test_total
-    te_gm = math.sqrt((te_tp / (te_tp + te_fn)) * (te_tn / (te_tn + te_fp)))
-    te_bm = te_tp / (te_tp + te_fn) + te_tn / (te_tn + te_fp) - 1
-    #acu_curve(y,y_pred)
-    print('epoch: ', epoch,
-          'loss： ', round(epoch_loss, 5),
-          'ba:', round(ba, 5),
-          tra_ba.append(ba),
-          'test_loss： ', round(epoch_test_loss, 5),
-          'test_ba: ', round(te_ba, 5),
-          test_ba.append(te_ba),
-          'GM: ', round(gm, 5),
-          tra_gm.append(gm),
-          'test_GM: ', round(te_gm, 5),
-          test_gm.append(te_gm),
-          'BM: ', round(bm, 5),
-          tra_bm.append(bm),
-          'te_BM: ', round(te_bm, 5),
-          test_bm.append(te_bm),
-          'mcc: ', round(mcc, 5),
-          tra_mcc.append(mcc),
-          'test_mcc: ', round(te_mcc, 5),
-          test_mcc.append(te_mcc)
-           #'auc: ',round(auc,5),
-           #tra_auc.append(auc),
-           #'test_auc: ',round(test_auc,5),
-           #te_auc.append(test_auc)
-          # 'tp: ',round(tp),
-          # 'fn: ',round(fn),
-          # 'fp: ',round(fp),
-          # 'tn: ',round(tn),
-          # 'te_tp: ',round(te_tp),
-          # 'te_fn: ',round(te_fn),
-          # 'te_fp: ',round(te_fp),
-          # 'te_tn: ',round(te_tn)
-          )
 
     return epoch_loss, epoch_acc, epoch_test_loss, epoch_test_acc
-epochs = 50
+epochs = 100
 i=0
 for epoch in range(epochs):
     epoch_loss, epoch_acc, epoch_test_loss, epoch_test_acc = fit(epoch,
                                                                  model,
                                                                  train_dl,
-                                                                 test_dl)
+                                                                 valid_dl)
     i=i+1
     print("save_model")
     torch.save(model.state_dict(), '\\mz_tragaijin_%d.pkl' % i)
-    train_loss.append(epoch_loss)
-    #train_acc.append(epoch_acc)
-    test_loss.append(epoch_test_loss)
-    #test_acc.append(epoch_test_acc)
-print(test_loss)
-print(test_ba)
-print(test_bm)
-print(test_gm)
-print(test_mcc)
-print(te_auc)
-print(train_loss)
-print(tra_ba)
-print(tra_bm)
-print(tra_gm)
-print(tra_mcc)
-print(tra_auc)
