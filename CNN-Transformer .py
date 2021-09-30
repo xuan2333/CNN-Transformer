@@ -12,7 +12,6 @@ from sklearn.metrics import roc_auc_score
 
 data=pd.read_csv('train.csv')
 data2=pd.read_csv('valid.csv')
-data3=pd.read_csv('test.csv');
 data=data[['labels','SequenceID']]
 labels=data.labels
 import re
@@ -119,52 +118,6 @@ pad_text = np.array(pad_text)
 labels = data2.labels.values
 x_valid,  y_valid = pad_text, labels
 #-------------------------------
-labels=data3.labels
-pat=re.compile('[A-Za-z]')
-def pre_text(text):
-    text=pat.findall(text)
-    text=[w.lower() for w in text]
-    return text
-x=data3.SequenceID.apply(pre_text)
-#创建词表
-word_set =set()
-for t in x:
-    for word in t:
-        word_set.add(word)
-
-max_word=len(word_set)+1
-word_list=list(word_set)
-word_index=dict((w,word_list.index(w)+1)for w in word_list)
-text = x.apply(lambda x: [word_index.get(word, 0) for word in x])
-text_len=1200
-pad_text = [l + (text_len-len(l))*[0] if len(l)<=text_len else l[ :text_len]
-                                                               for l in text]
-pad_text = np.array(pad_text)
-labels = data3.labels.values
-
-labels=data3.labels
-pat=re.compile('[A-Za-z]')
-def pre_text(text):
-    text=pat.findall(text)
-    text=[w.lower() for w in text]
-    return text
-x=data.SequenceID.apply(pre_text)
-#创建词表
-word_set =set()
-for t in x:
-    for word in t:
-        word_set.add(word)
-
-max_word=len(word_set)+1
-word_list=list(word_set)
-word_index=dict((w,word_list.index(w)+1)for w in word_list)
-text = x.apply(lambda x: [word_index.get(word, 0) for word in x])
-text_len=800
-pad_text = [l + (text_len-len(l))*[0] if len(l)<=text_len else l[ :text_len]
-                                                               for l in text]
-pad_text = np.array(pad_text)
-labels = data3.labels.values
-x_test,  y_test = pad_text, labels
 #-------------------------------
 
 class Mydataset(torch.utils.data.Dataset):
